@@ -1,5 +1,6 @@
 appId: de.mindbox.dbmirror
 productName: DB-Mirror
+artifactName: "${productName}-${version}.${ext}"
 directories:
   output: release
 files:
@@ -13,6 +14,7 @@ win:
   target:
     - nsis
 linux:
+  executableName: db-mirror
   target:
     - AppImage
     - deb
