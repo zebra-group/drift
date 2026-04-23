@@ -3,6 +3,7 @@ productName: Drift
 artifactName: "${productName}-${version}-${arch}.${ext}"
 directories:
   output: release
+npmRebuild: false
 files:
   - dist/**
   - package.json
