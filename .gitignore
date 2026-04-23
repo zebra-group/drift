@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+out/
+release/
+*.log
+.DS_Store
+.env
+.env.local
+*.db-mirror
+vault.db-mirror
+coverage/
+.vite/
+.turbo/
+repomix-output.md
+repomix-output.md
+tsconfig.tsbuildinfo

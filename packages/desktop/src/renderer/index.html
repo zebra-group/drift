@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DB-Mirror</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+      /* =======================================================
+         DB-Mirror — global design tokens + primitives
+         Dark, terminal-adjacent, professional dev-tool aesthetic
+         ======================================================= */
+      :root {
+        --bg: #0b0f14;
+        --bg-2: #0e141b;
+        --panel: #121922;
+        --panel-2: #172030;
+        --panel-inset: #080b10;
+
+        --border: #1f2a38;
+        --border-2: #2a384a;
+        --hairline: #16202c;
+
+        --text: #e2e8f0;
+        --text-dim: #b4c0cf;
+        --muted: #7a8698;
+        --muted-2: #55637a;
+
+        --accent: oklch(0.74 0.14 235);
+        --accent-ink: #04111c;
+        --accent-soft: color-mix(in oklab, var(--accent) 14%, transparent);
+        --accent-line: color-mix(in oklab, var(--accent) 42%, transparent);
+
+        --danger: oklch(0.70 0.18 22);
+        --danger-soft: color-mix(in oklab, var(--danger) 14%, transparent);
+        --danger-line: color-mix(in oklab, var(--danger) 40%, transparent);
+
+        --ok: oklch(0.78 0.14 155);
+        --ok-soft: color-mix(in oklab, var(--ok) 14%, transparent);
+
+        --warn: oklch(0.82 0.14 82);
+        --warn-soft: color-mix(in oklab, var(--warn) 14%, transparent);
+
+        --violet: oklch(0.72 0.14 295);
+
+        --font-ui: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+        --r-1: 4px; --r-2: 6px; --r-3: 10px;
+        --shadow-1: 0 1px 0 rgba(255,255,255,0.02) inset, 0 1px 2px rgba(0,0,0,0.4);
+        --shadow-2: 0 10px 30px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.5);
+        --ease: cubic-bezier(.2,.6,.2,1);
+      }
+
+      * { box-sizing: border-box; }
+      html, body, #root { height: 100%; margin: 0; }
+      body {
+        font: 13px/1.5 var(--font-ui);
+        color: var(--text);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "cv11", "ss01";
+      }
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-thumb { background: #1a2432; border-radius: 10px; border: 2px solid var(--bg); }
+      ::-webkit-scrollbar-thumb:hover { background: #253246; }
+      ::selection { background: color-mix(in oklab, var(--accent) 40%, transparent); color: #fff; }
+
+      .mono { font-family: var(--font-mono); }
+      .num  { font-variant-numeric: tabular-nums; }
+      .muted { color: var(--muted); }
+      .danger-text { color: oklch(0.85 0.18 22); }
+      .ok-text { color: oklch(0.88 0.14 155); }
+
+      .kbd {
+        font-family: var(--font-mono); font-size: 11px;
+        padding: 2px 5px; border-radius: 4px;
+        background: #0a0f16; border: 1px solid var(--border); border-bottom-width: 2px;
+        color: var(--text-dim);
+      }
+
+      /* Buttons */
+      .btn {
+        --h: 30px;
+        display: inline-flex; align-items: center; gap: 6px;
+        height: var(--h); padding: 0 10px;
+        font: 500 12.5px/1 var(--font-ui);
+        color: var(--text);
+        background: linear-gradient(180deg, #1a2330, #131b26);
+        border: 1px solid var(--border); border-radius: var(--r-2);
+        cursor: pointer; white-space: nowrap;
+        transition: background .12s var(--ease), border-color .12s var(--ease);
+      }
+      .btn:hover { background: linear-gradient(180deg, #1f2938, #17202c); border-color: var(--border-2); }
+      .btn:disabled { opacity: .45; cursor: not-allowed; }
+      .btn.sm { --h: 24px; padding: 0 8px; font-size: 11.5px; }
+      .btn.lg { --h: 34px; padding: 0 14px; font-size: 13px; }
+      .btn.primary {
+        background: linear-gradient(180deg, oklch(0.78 0.13 235), oklch(0.65 0.14 235));
+        color: var(--accent-ink);
+        border-color: oklch(0.55 0.12 235);
+        font-weight: 600;
+      }
+      .btn.primary:hover { filter: brightness(1.08); }
+      .btn.ghost { background: transparent; border-color: transparent; }
+      .btn.ghost:hover { background: var(--panel-2); border-color: var(--border); }
+      .btn.danger {
+        background: transparent; color: oklch(0.8 0.18 22);
+        border-color: var(--danger-line);
+      }
+      .btn.danger:hover { background: var(--danger-soft); }
+      .btn.danger.solid {
+        background: linear-gradient(180deg, oklch(0.72 0.18 22), oklch(0.6 0.18 22));
+        color: #1a0707; border-color: oklch(0.5 0.18 22); font-weight: 600;
+      }
+
+      /* Inputs */
+      .input, .select, .textarea {
+        width: 100%; height: 30px; padding: 0 10px;
+        font: 13px/1 var(--font-ui); color: var(--text);
+        background: var(--panel-inset);
+        border: 1px solid var(--border); border-radius: var(--r-2);
+        outline: none;
+        transition: border-color .12s var(--ease), box-shadow .12s var(--ease);
+      }
+      .input.mono, .select.mono { font-family: var(--font-mono); font-size: 12.5px; }
+      .input:focus, .select:focus, .textarea:focus {
+        border-color: var(--accent-line);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+      .select {
+        appearance: none;
+        background-image:
+          linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+          linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+        background-position: calc(100% - 14px) 13px, calc(100% - 9px) 13px;
+        background-size: 5px 5px; background-repeat: no-repeat;
+        padding-right: 28px;
+      }
+      .textarea {
+        height: auto; padding: 8px 10px; font-family: var(--font-mono);
+        font-size: 12.5px; resize: vertical;
+      }
+
+      .field-label {
+        font: 500 11px/1 var(--font-ui); color: var(--muted);
+        text-transform: uppercase; letter-spacing: 0.06em;
+        margin-bottom: 6px; display: flex; gap: 6px; align-items: center;
+      }
+
+      /* Panel */
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--r-3);
+        box-shadow: var(--shadow-1);
+      }
+      .panel-head {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--hairline);
+        font: 600 12.5px/1 var(--font-ui);
+      }
+      .panel-body { padding: 14px; }
+
+      /* Pills */
+      .pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        height: 20px; padding: 0 7px;
+        font: 500 11px/1 var(--font-ui); border-radius: 999px;
+        background: var(--panel-2); border: 1px solid var(--border);
+        color: var(--text-dim); white-space: nowrap;
+      }
+      .pill.dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+      .pill.ok     { color: oklch(0.88 0.14 155); background: var(--ok-soft); border-color: color-mix(in oklab, var(--ok) 35%, transparent); }
+      .pill.ok.dot::before { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+      .pill.warn   { color: oklch(0.9 0.14 82); background: var(--warn-soft); border-color: color-mix(in oklab, var(--warn) 35%, transparent); }
+      .pill.warn.dot::before { background: var(--warn); }
+      .pill.danger { color: oklch(0.85 0.18 22); background: var(--danger-soft); border-color: var(--danger-line); }
+      .pill.danger.dot::before { background: var(--danger); }
+      .pill.accent { color: oklch(0.88 0.14 235); background: var(--accent-soft); border-color: var(--accent-line); }
+      .pill.violet { color: oklch(0.88 0.12 295); background: color-mix(in oklab, var(--violet) 14%, transparent); border-color: color-mix(in oklab, var(--violet) 35%, transparent); }
+
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .spinner {
+        display: inline-block; width: 14px; height: 14px;
+        border: 1.5px solid var(--border-2); border-top-color: var(--accent);
+        border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0;
+      }
+      .spinner.sm { width: 10px; height: 10px; border-width: 1.2px; }
+      .spinner.dark { border-top-color: var(--accent-ink); }
+
+      @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+      .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.4s ease-in-out infinite; display: inline-block; }
+
+      /* Table */
+      .tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+      .tbl th {
+        text-align: left;
+        font: 500 10.5px/1 var(--font-ui);
+        text-transform: uppercase; letter-spacing: 0.07em;
+        color: var(--muted); padding: 10px 12px;
+        border-bottom: 1px solid var(--hairline);
+        background: var(--bg-2);
+        position: sticky; top: 0;
+      }
+      .tbl td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--hairline);
+        vertical-align: middle;
+      }
+      .tbl tr.row-hover:hover td { background: var(--panel-2); cursor: pointer; }
+      .tbl tr.selected td { background: color-mix(in oklab, var(--accent) 8%, transparent); }
+      .tbl tr.selected td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+
+      /* Segmented */
+      .seg { display: inline-flex; padding: 2px; background: var(--panel-inset); border: 1px solid var(--border); border-radius: var(--r-2); }
+      .seg button {
+        height: 24px; padding: 0 10px;
+        font: 500 12px/1 var(--font-ui); color: var(--muted);
+        background: transparent; border: none; border-radius: 4px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 4px;
+      }
+      .seg button.on { background: var(--panel-2); color: var(--text); }
+
+      /* Checkbox */
+      .check { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 12.5px; color: var(--text-dim); user-select: none; }
+      .check input { display: none; }
+      .check .box {
+        width: 15px; height: 15px;
+        border: 1px solid var(--border-2); border-radius: 3px;
+        background: var(--panel-inset);
+        display: grid; place-items: center;
+        transition: all .12s var(--ease);
+      }
+      .check input:checked + .box { background: var(--accent); border-color: var(--accent); }
+      .check input:checked + .box::after {
+        content: ""; width: 8px; height: 4px;
+        border-left: 1.5px solid var(--accent-ink);
+        border-bottom: 1.5px solid var(--accent-ink);
+        transform: rotate(-45deg) translate(1px, -1px);
+      }
+
+      /* Switch */
+      .switch { position: relative; width: 30px; height: 17px; display: inline-block; }
+      .switch input { display: none; }
+      .switch .track { position: absolute; inset: 0; background: var(--panel-inset); border: 1px solid var(--border); border-radius: 999px; transition: all .15s var(--ease); }
+      .switch .thumb { position: absolute; top: 2px; left: 2px; width: 11px; height: 11px; background: var(--muted); border-radius: 50%; transition: all .15s var(--ease); }
+      .switch input:checked + .track { background: var(--accent-soft); border-color: var(--accent-line); }
+      .switch input:checked + .track .thumb { left: 15px; background: var(--accent); }
+
+      /* Code */
+      .code {
+        background: var(--panel-inset); border: 1px solid var(--hairline);
+        border-radius: var(--r-2); padding: 12px 14px;
+        font-family: var(--font-mono); font-size: 12px; line-height: 1.65;
+        overflow: auto; color: var(--text-dim);
+        white-space: pre-wrap; word-break: break-word;
+      }
+      .sql-kw  { color: oklch(0.78 0.15 310); }
+      .sql-id  { color: oklch(0.85 0.1 210); }
+      .sql-fn  { color: oklch(0.82 0.14 82);  }
+      .sql-str { color: oklch(0.82 0.12 145); }
+      .sql-com { color: var(--muted-2); font-style: italic; }
+      .sql-num { color: oklch(0.82 0.12 30); }
+      .sql-dest { color: oklch(0.8 0.18 22); }
+
+      /* Titlebar (Electron) */
+      .titlebar {
+        height: 38px; display: flex; align-items: center;
+        padding: 0 12px; gap: 10px;
+        background: linear-gradient(180deg, #0f151d, #0b0f14);
+        border-bottom: 1px solid var(--hairline);
+        -webkit-app-region: drag; user-select: none;
+      }
+      .titlebar nav { display: flex; gap: 2px; -webkit-app-region: no-drag; }
+      .titlebar nav button {
+        background: transparent; border: none; color: var(--muted);
+        height: 24px; padding: 0 10px; font: 500 12px/1 var(--font-ui);
+        border-radius: 5px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 6px;
+      }
+      .titlebar nav button:hover { color: var(--text); background: var(--panel-2); }
+      .titlebar nav button.on { color: var(--text); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--accent); }
+      .titlebar .right { margin-left: auto; display: flex; gap: 6px; align-items: center; -webkit-app-region: no-drag; }
+
+      .brandmark {
+        width: 18px; height: 18px; border-radius: 5px;
+        background: radial-gradient(circle at 30% 30%, oklch(0.78 0.15 235), oklch(0.45 0.12 235)), #0b0f14;
+      }
+
+      /* Utility */
+      .row { display: flex; align-items: center; gap: 8px; }
+      .col { display: flex; flex-direction: column; gap: 8px; }
+      .hline { height: 1px; background: var(--hairline); }
+      .hl-dest { border-left: 2px solid var(--danger); padding-left: 10px; background: var(--danger-soft); }
+
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
+
+      /* Icon sizing */
+      .i { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .i svg { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

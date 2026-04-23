@@ -1,0 +1,31 @@
+{
+  "name": "@db-mirror/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0",
+    "micromatch": "^4.0.5",
+    "mysql2": "^3.9.0",
+    "ssh2": "^1.17.0"
+  },
+  "devDependencies": {
+    "@types/micromatch": "^4.0.6",
+    "@types/ssh2": "^1.15.5",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}

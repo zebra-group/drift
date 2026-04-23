@@ -1,0 +1,30 @@
+{
+  "name": "@db-mirror/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DB-Mirror desktop application",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "vite",
+    "build:renderer": "vite build",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build": "pnpm build:main && pnpm build:renderer",
+    "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "start": "electron .",
+    "package": "electron-builder",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@db-mirror/core": "workspace:*",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0",
+    "vitest": "^1.4.0"
+  }
+}

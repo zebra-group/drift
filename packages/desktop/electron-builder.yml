@@ -1,0 +1,19 @@
+appId: de.mindbox.dbmirror
+productName: DB-Mirror
+publish: never
+directories:
+  output: release
+files:
+  - dist/**
+  - package.json
+mac:
+  target:
+    - dmg
+  category: public.app-category.developer-tools
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+    - deb
