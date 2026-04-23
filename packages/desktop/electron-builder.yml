@@ -8,6 +8,8 @@ files:
   - package.json
 mac:
   icon: build/icon.icns
+  identity: null
+  hardenedRuntime: false
   target:
     - dmg
   category: public.app-category.developer-tools
