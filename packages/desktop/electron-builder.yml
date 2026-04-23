@@ -1,6 +1,5 @@
 appId: de.mindbox.dbmirror
 productName: DB-Mirror
-publish: never
 directories:
   output: release
 files:
