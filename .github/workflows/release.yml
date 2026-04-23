@@ -29,10 +29,34 @@ jobs:
           version: 9
           run_install: false
 
+      - name: Get pnpm store path
+        id: pnpm-cache
+        shell: bash
+        run: echo "store=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.store }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: electron-${{ runner.os }}-${{ hashFiles('packages/desktop/package.json') }}
+          restore-keys: electron-${{ runner.os }}-
+
       - name: Sync version from tag
         shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          echo "Building version: $VERSION"
           for PKG in package.json packages/core/package.json packages/cli/package.json packages/desktop/package.json; do
             node -e "
               const fs = require('fs');
@@ -51,19 +75,23 @@ jobs:
       - name: Build desktop
         run: pnpm --filter @db-mirror/desktop build
 
-      - name: Package (macOS)
-        if: runner.os == 'macOS'
-        run: pnpm --filter @db-mirror/desktop exec electron-builder --mac --publish never
+      - name: List build output
+        shell: bash
+        run: find packages/desktop/dist -type f | sort
+
+      - name: Install Linux packaging deps
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y fakeroot dpkg
+
+      - name: Package
+        shell: bash
+        run: pnpm --filter @db-mirror/desktop run package
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - name: Package (Windows)
-        if: runner.os == 'Windows'
-        run: pnpm --filter @db-mirror/desktop exec electron-builder --win --publish never
-
-      - name: Package (Linux)
-        if: runner.os == 'Linux'
-        run: pnpm --filter @db-mirror/desktop exec electron-builder --linux --publish never
+      - name: List release output
+        shell: bash
+        run: find packages/desktop/release -type f | sort
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
