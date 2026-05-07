@@ -419,7 +419,7 @@ async function copySql() {
           <header class="panel-head">
             <span v-if="busy" class="spinner" />
             <span v-else class="glyph ok" />
-            <span>{{ busy ? "Computing diff…" : "Diff complete" }}</span>
+            <span>{{ applyBusy ? "Applying…" : busy ? "Computing diff…" : "Diff complete" }}</span>
             <span class="mono muted" style="font-weight:400; font-size:11.5px">· {{ diffElapsed.toFixed(2) }}s</span>
             <div class="grow" />
             <button class="btn sm ghost" @click="copyLog"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="5" y="5" width="8" height="8" rx="1"/><path d="M3 11V4a1 1 0 0 1 1-1h7"/></svg>Copy log</button>

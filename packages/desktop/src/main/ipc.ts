@@ -165,7 +165,7 @@ export function registerIpcHandlers(): void {
     const push = (msg: string) => e.sender.send(IPC.ApplyProgress, msg);
     push(`[apply] connection: ${conn.label}`);
     try {
-      const result = await applyPlan(conn.pool, args.plan, { dryRun: args.dryRun, continueOnError: true, onProgress: push });
+      const result = await applyPlan(conn.pool, args.plan, { dryRun: args.dryRun, continueOnError: true, onProgress: push, queryTimeout: 60_000 });
       // Post-apply verification: sample one changed data table and one schema column
       if (!args.dryRun && args.plan.data.length) {
         try {
