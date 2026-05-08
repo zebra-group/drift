@@ -31,7 +31,10 @@ export function vaultCommand(): Command {
       const v = await Vault.open(opts.path, pass);
       console.log("Profiles:");
       for (const p of v.listProfiles()) {
-        const loc = p.kind === "direct" ? `${p.host}:${p.port}` : `k8s ${p.context}/${p.namespace}/${p.target.kind}:${p.target.name}:${p.remotePort}`;
+        const loc = p.kind === "direct" ? `${p.host}:${p.port}`
+          : p.kind === "k8s" ? `k8s ${p.context}/${p.namespace}/${p.target.kind}:${p.target.name}:${p.remotePort}`
+          : p.kind === "ssh" ? `ssh ${p.sshHost}:${p.sshPort} → ${p.host}:${p.port}`
+          : `docker ${p.containerId}`;
         console.log(`  [${p.kind}] ${p.name}  → ${loc}  db=${p.database ?? "-"}  id=${p.id}`);
       }
       console.log("Pairs:");
