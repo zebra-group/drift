@@ -246,7 +246,7 @@ describe("buildPlan() — schema + data sync", () => {
     if (skip) return;
     // Copy data into target manually so both DBs match
     await ctx.tgtPool.query(
-      `INSERT INTO \`${ctx.tgtDb}\`.categories (name) VALUES ('Alpha'), ('Beta'), ('Gamma')`
+      `INSERT INTO \`${ctx.tgtDb}\`.categories (id, name) VALUES (1, 'Alpha'), (2, 'Beta'), (3, 'Gamma')`
     );
 
     const plan = await buildPlan(
