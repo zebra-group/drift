@@ -3,6 +3,13 @@ import { promisify } from "node:util";
 
 const execAsync = promisify(execFile);
 
+// Electron apps on macOS inherit a minimal PATH; add common locations for docker/mysql tooling.
+const EXTRA_PATHS = ["/usr/local/bin", "/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/sbin"];
+function augmentedEnv(): NodeJS.ProcessEnv {
+  const extra = EXTRA_PATHS.filter((p) => !(process.env.PATH ?? "").split(":").includes(p)).join(":");
+  return { ...process.env, PATH: extra ? `${process.env.PATH ?? ""}:${extra}` : process.env.PATH };
+}
+
 export interface DockerContainer {
   id: string;
   name: string;
@@ -15,7 +22,7 @@ export async function listMysqlContainers(): Promise<DockerContainer[]> {
     const { stdout } = await execAsync("docker", [
       "ps",
       "--format", "{{.ID}}\t{{.Names}}\t{{.Image}}\t{{.Ports}}",
-    ], { timeout: 5000 });
+    ], { timeout: 5000, env: augmentedEnv() });
 
     return stdout
       .trim()
@@ -44,7 +51,7 @@ function parseDockerPorts(portsStr: string): { internal: number; external: numbe
 }
 
 export async function getContainerPort(containerId: string, internalPort: number): Promise<number> {
-  const { stdout } = await execAsync("docker", ["port", containerId, String(internalPort)], { timeout: 5000 });
+  const { stdout } = await execAsync("docker", ["port", containerId, String(internalPort)], { timeout: 5000, env: augmentedEnv() });
   const m = stdout.match(/:(\d+)/);
   if (!m) throw new Error(`No port mapping found for container ${containerId}:${internalPort}`);
   return parseInt(m[1]);
@@ -54,7 +61,7 @@ export async function getContainerEnvs(containerId: string): Promise<Record<stri
   try {
     const { stdout } = await execAsync("docker", [
       "inspect", "--format", "{{json .Config.Env}}", containerId,
-    ], { timeout: 5000 });
+    ], { timeout: 5000, env: augmentedEnv() });
     const envArray: string[] = JSON.parse(stdout.trim());
     const result: Record<string, string> = {};
     for (const entry of envArray) {

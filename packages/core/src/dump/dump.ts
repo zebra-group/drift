@@ -4,6 +4,13 @@ import type { Profile } from "../vault/types.js";
 import { openConnection } from "../connection/connection.js";
 import { K8sClient, type PortForwardHandle } from "../k8s/port-forward.js";
 
+// Electron apps on macOS inherit a minimal PATH; add common locations for mysqldump.
+const EXTRA_PATHS = ["/usr/local/bin", "/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/sbin"];
+function augmentedEnv(): NodeJS.ProcessEnv {
+  const extra = EXTRA_PATHS.filter((p) => !(process.env.PATH ?? "").split(":").includes(p)).join(":");
+  return { ...process.env, PATH: extra ? `${process.env.PATH ?? ""}:${extra}` : process.env.PATH };
+}
+
 export interface DumpOptions {
   tables?: string[];
   extraArgs?: string[];
@@ -50,9 +57,17 @@ async function resolveEndpoint(profile: Profile, databaseOverride?: string): Pro
   const k8s = new K8sClient(profile.kubeconfigPath);
   let fwd: PortForwardHandle | undefined;
   try {
+    const [user, password] = await Promise.all([
+      profile.userFrom
+        ? k8s.resolveSecretValue(profile.namespace, profile.userFrom, profile.context)
+        : Promise.resolve(profile.user),
+      profile.passwordFrom
+        ? k8s.resolveSecretValue(profile.namespace, profile.passwordFrom, profile.context)
+        : Promise.resolve(profile.password),
+    ]);
     fwd = await k8s.startPortForward({ context: profile.context, namespace: profile.namespace, target: profile.target, remotePort: profile.remotePort });
     const handle = fwd;
-    return { host: "127.0.0.1", port: handle.localPort, user: profile.user, password: profile.password, database, cleanup: () => handle.close() };
+    return { host: "127.0.0.1", port: handle.localPort, user, password, database, cleanup: () => handle.close() };
   } catch (err) {
     if (fwd) await fwd.close().catch(() => undefined);
     throw err;
@@ -90,7 +105,7 @@ export async function dumpToFile(
   try {
     const args = buildDumpArgs(ep, opts);
     const child = spawn(opts.binary ?? "mysqldump", args, {
-      env: { ...process.env, MYSQL_PWD: ep.password },
+      env: { ...augmentedEnv(), MYSQL_PWD: ep.password },
     });
 
     const outStream = createWriteStream(outputPath);
@@ -99,8 +114,11 @@ export async function dumpToFile(
     await new Promise<void>((resolve, reject) => {
       child.stdout.pipe(outStream);
       child.on("error", reject);
-      child.on("close", (code) => {
-        if (code !== 0) reject(new Error(`mysqldump exited with code ${code}`));
+      outStream.on("error", reject);
+      let exitCode = 0;
+      child.on("close", (code) => { exitCode = code ?? 0; });
+      outStream.on("finish", () => {
+        if (exitCode !== 0) reject(new Error(`mysqldump exited with code ${exitCode}`));
         else resolve();
       });
     });
