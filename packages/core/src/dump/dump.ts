@@ -1,5 +1,7 @@
 import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
+import { Transform } from "node:stream";
+import mysql from "mysql2/promise";
 import type { Profile } from "../vault/types.js";
 import { openConnection } from "../connection/connection.js";
 import { K8sClient, type PortForwardHandle } from "../k8s/port-forward.js";
@@ -74,6 +76,22 @@ async function resolveEndpoint(profile: Profile, databaseOverride?: string): Pro
   }
 }
 
+/** Returns raw data+index bytes from information_schema as a rough dump-size estimate. */
+async function estimateDumpBytes(ep: ResolvedEndpoint): Promise<number> {
+  const pool = mysql.createPool({ host: ep.host, port: ep.port, user: ep.user, password: ep.password, connectionLimit: 1 });
+  try {
+    const [rows] = await pool.query(
+      "SELECT COALESCE(SUM(data_length + index_length), 0) AS sz FROM information_schema.TABLES WHERE table_schema = ?",
+      [ep.database],
+    ) as [{ sz: number | string }[], unknown];
+    return Number(rows[0]?.sz ?? 0);
+  } catch {
+    return 0;
+  } finally {
+    await pool.end().catch(() => undefined);
+  }
+}
+
 function buildDumpArgs(ep: ResolvedEndpoint, opts: DumpOptions): string[] {
   return [
     `--host=${ep.host}`,
@@ -103,6 +121,8 @@ export async function dumpToFile(
 ): Promise<string> {
   const ep = await resolveEndpoint(profile, database);
   try {
+    const totalBytes = await estimateDumpBytes(ep);
+
     const args = buildDumpArgs(ep, opts);
     const child = spawn(opts.binary ?? "mysqldump", args, {
       env: { ...augmentedEnv(), MYSQL_PWD: ep.password },
@@ -111,8 +131,21 @@ export async function dumpToFile(
     const outStream = createWriteStream(outputPath);
     child.stderr.on("data", (chunk: Buffer) => onProgress?.(`⚠ ${chunk.toString("utf8").trim()}`));
 
+    let bytesWritten = 0;
+    let lastPct = -1;
+    const counter = new Transform({
+      transform(chunk: Buffer, _enc, cb) {
+        bytesWritten += chunk.length;
+        if (totalBytes > 0 && onProgress) {
+          const pct = Math.min(99, Math.round((bytesWritten / totalBytes) * 100));
+          if (pct !== lastPct) { lastPct = pct; onProgress(`progress:${pct}`); }
+        }
+        cb(null, chunk);
+      },
+    });
+
     await new Promise<void>((resolve, reject) => {
-      child.stdout.pipe(outStream);
+      child.stdout.pipe(counter).pipe(outStream);
       child.on("error", reject);
       outStream.on("error", reject);
       let exitCode = 0;

@@ -42,8 +42,8 @@ export const rpc = {
     sourceDb?: string; targetDb?: string;
     schema: boolean; data: boolean;
     include?: string[]; exclude?: string[]; ignoreColumns?: string[];
-  }) => api().invoke<import("@db-mirror/core").SyncPlan>(IPC.Diff, args),
-  apply: (args: { targetProfileId: string; plan: import("@db-mirror/core").SyncPlan; dryRun?: boolean }) =>
+  }) => api().invoke<import("@db-mirror/core").SyncPlan & { planId: string }>(IPC.Diff, args),
+  apply: (args: { targetProfileId: string; planId: string; dryRun?: boolean }) =>
     api().invoke<import("@db-mirror/core").ApplyResult>(IPC.Apply, args),
   overwrite: (args: { sourceProfileId: string; targetProfileId: string; tables?: string[] }) =>
     api().invoke<boolean>(IPC.Overwrite, args),

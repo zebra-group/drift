@@ -16,6 +16,9 @@ const defaultVaultPath = (): string =>
 
 let currentVault: Vault | null = null;
 
+// Plans are kept in main memory; only a planId crosses the IPC boundary on Apply.
+const planStore = new Map<string, SyncPlan>();
+
 function requireVault(): Vault {
   if (!currentVault) throw new Error("Vault is locked");
   return currentVault;
@@ -158,34 +161,37 @@ export function registerIpcHandlers(): void {
         queryTimeout: 30_000,
       });
       push(`✓ Fertig — ${plan.schema.length} Schema-, ${plan.data.length} Daten-Statement(s)`);
-      return safePlan(plan);
+      const planId = randomUUID();
+      planStore.set(planId, plan);
+      return { ...safePlan(plan), planId };
     } finally {
       await src.close(); await tgt.close();
     }
   });
 
-  ipcMain.handle(IPC.Apply, async (e, args: { targetProfileId: string; plan: SyncPlan; dryRun?: boolean }) => {
+  ipcMain.handle(IPC.Apply, async (e, args: { targetProfileId: string; planId: string; dryRun?: boolean }) => {
+    const plan = planStore.get(args.planId);
+    if (!plan) throw new Error("Plan nicht gefunden — bitte Diff neu berechnen");
     const v = requireVault();
     const tp = v.getProfile(args.targetProfileId)!;
     const conn = await openConnection(tp);
     const push = (msg: string) => e.sender.send(IPC.ApplyProgress, msg);
     push(`[apply] connection: ${conn.label}`);
     try {
-      const result = await applyPlan(conn.pool, args.plan, { dryRun: args.dryRun, continueOnError: true, onProgress: push, queryTimeout: 60_000 });
+      const result = await applyPlan(conn.pool, plan, { dryRun: args.dryRun, continueOnError: true, onProgress: push, queryTimeout: 60_000 });
       // Post-apply verification: sample one changed data table and one schema column
-      if (!args.dryRun && args.plan.data.length) {
+      if (!args.dryRun && plan.data.length) {
         try {
-          const sampleTable = args.plan.data[0]?.table;
+          const sampleTable = plan.data[0]?.table;
           if (sampleTable) {
-            const [[row]] = await conn.pool.query(`SELECT COUNT(*) AS cnt FROM \`${args.plan.targetDatabase}\`.\`${sampleTable}\``) as any;
+            const [[row]] = await conn.pool.query(`SELECT COUNT(*) AS cnt FROM \`${plan.targetDatabase}\`.\`${sampleTable}\``) as any;
             push(`[verify] ${sampleTable} row count after apply: ${row?.cnt}`);
           }
-          // Check a schema column collation to verify DDL persisted
-          if (args.plan.schema.length) {
-            const sampleObj = args.plan.schema[0]?.object;
+          if (plan.schema.length) {
+            const sampleObj = plan.schema[0]?.object;
             const [[col]] = await conn.pool.query(
               `SELECT COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=? LIMIT 1`,
-              [args.plan.targetDatabase, sampleObj]
+              [plan.targetDatabase, sampleObj]
             ) as any;
             push(`[verify] ${sampleObj} first col collation: ${col?.COLLATION_NAME ?? 'null'}`);
           }
@@ -193,6 +199,7 @@ export function registerIpcHandlers(): void {
           push(`[verify] error: ${(verr as Error).message}`);
         }
       }
+      if (!args.dryRun) planStore.delete(args.planId);
       return result;
     } finally { await conn.close(); }
   });

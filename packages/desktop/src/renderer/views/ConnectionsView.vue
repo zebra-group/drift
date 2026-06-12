@@ -10,7 +10,7 @@ const filter = ref("");
 const busy = ref(false);
 
 // Dump modal state
-const dumpModal = ref<{ profileId: string; databases: string[]; database: string; loading: boolean; loadError: string | null; running: boolean; log: string[]; result: string | null } | null>(null);
+const dumpModal = ref<{ profileId: string; databases: string[]; database: string; loading: boolean; loadError: string | null; running: boolean; log: string[]; progress: number | null; result: string | null } | null>(null);
 
 async function refresh() {
   busy.value = true;
@@ -94,7 +94,7 @@ function toggleFolder(name: string) {
 
 // Dump helpers
 async function openDump(p: Profile) {
-  dumpModal.value = { profileId: p.id, databases: [], database: p.database ?? "", loading: true, loadError: null, running: false, log: [], result: null };
+  dumpModal.value = { profileId: p.id, databases: [], database: p.database ?? "", loading: true, loadError: null, running: false, log: [], progress: null, result: null };
   try {
     const dbs = await rpc.listDatabases(p.id);
     dumpModal.value.databases = dbs;
@@ -108,8 +108,16 @@ async function runDump() {
   if (!dumpModal.value?.database) return;
   dumpModal.value.running = true;
   dumpModal.value.log = [];
+  dumpModal.value.progress = null;
   dumpModal.value.result = null;
-  const unsub = rpc.onDumpProgress((msg) => { dumpModal.value?.log.push(msg); });
+  const unsub = rpc.onDumpProgress((msg) => {
+    if (!dumpModal.value) return;
+    if (msg.startsWith("progress:")) {
+      dumpModal.value.progress = parseInt(msg.slice(9));
+    } else {
+      dumpModal.value.log.push(msg);
+    }
+  });
   try {
     const path = await rpc.dumpToFile({ profileId: dumpModal.value.profileId, database: dumpModal.value.database });
     if (dumpModal.value) dumpModal.value.result = path;
@@ -269,6 +277,18 @@ async function runDump() {
             <div v-for="(l, i) in dumpModal.log" :key="i" class="dump-log-row" :class="{ ok: l.startsWith('✓'), warn: l.startsWith('⚠') }">{{ l }}</div>
           </div>
 
+          <div v-if="dumpModal.running || dumpModal.result" class="dump-progress-outer">
+            <div class="dump-progress-wrap">
+              <div
+                class="dump-progress-bar"
+                :class="{ indeterminate: dumpModal.running && dumpModal.progress === null, done: !!dumpModal.result }"
+                :style="dumpModal.progress !== null && !dumpModal.result ? { width: dumpModal.progress + '%' } : {}"
+              />
+            </div>
+            <span v-if="dumpModal.result" class="dump-progress-pct done">100%</span>
+            <span v-else-if="dumpModal.progress !== null" class="dump-progress-pct">{{ dumpModal.progress }}%</span>
+          </div>
+
           <div v-if="dumpModal.result" class="dump-result">
             <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="var(--ok)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3 3 7-7"/></svg>
             <span class="mono" style="font-size:11.5px; word-break:break-all">{{ dumpModal.result }}</span>
@@ -376,6 +396,31 @@ async function runDump() {
 .dump-log-row.warn { color: oklch(0.9 0.14 82); }
 
 .dump-load-err { font-size: 11px; color: oklch(0.85 0.18 22); display: flex; gap: 5px; align-items: flex-start; margin-top: 6px; line-height: 1.5; }
+
+.dump-progress-outer {
+  display: flex; align-items: center; gap: 8px;
+}
+.dump-progress-wrap {
+  flex: 1; height: 4px; border-radius: 2px; background: var(--hairline); overflow: hidden;
+}
+.dump-progress-bar {
+  height: 100%; border-radius: 2px; width: 0; transition: width 0.3s ease;
+  background: oklch(0.62 0.19 250);
+}
+.dump-progress-bar.done {
+  width: 100%; background: oklch(0.72 0.18 155); transition: none;
+}
+.dump-progress-bar.indeterminate {
+  width: 40%; animation: dump-scan 1.4s ease-in-out infinite;
+}
+.dump-progress-pct {
+  font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; min-width: 32px; text-align: right;
+}
+.dump-progress-pct.done { color: oklch(0.72 0.18 155); }
+@keyframes dump-scan {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
 
 .dump-result {
   display: flex; gap: 8px; align-items: flex-start; padding: 10px;

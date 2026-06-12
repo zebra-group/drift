@@ -22,6 +22,7 @@ const include = ref("");
 const exclude = ref("");
 
 const plan = ref<SyncPlan | null>(null);
+const planId = ref<string | null>(null);
 const applyResult = ref<ApplyResult | null>(null);
 const busy = ref(false);
 const applyBusy = ref(false);
@@ -81,20 +82,23 @@ function pushLog(msg: string) {
 async function runDiff() {
   if (!source.value || !target.value) return;
   if (!sourceDb.value || !targetDb.value) { error.value = "Please select a database for source and target."; return; }
-  busy.value = true; error.value = null; plan.value = null; applyResult.value = null;
+  busy.value = true; error.value = null; plan.value = null; planId.value = null; applyResult.value = null;
   progressLog.value = []; diffStart.value = Date.now();
 
   const timer = setInterval(() => { diffElapsed.value = (Date.now() - diffStart.value) / 1000; }, 100);
   const unsubscribe = rpc.onDiffProgress(pushLog);
 
   try {
-    plan.value = await rpc.diff({
+    const result = await rpc.diff({
       sourceProfileId: source.value, targetProfileId: target.value,
       sourceDb: sourceDb.value, targetDb: targetDb.value,
       schema: includeSchema.value, data: includeData.value,
       include: include.value ? splitGlobs(include.value) : [],
       exclude: exclude.value ? splitGlobs(exclude.value) : [],
     });
+    const { planId: id, ...planData } = result;
+    plan.value = planData;
+    planId.value = id;
     if (plan.value) {
       const tbl = [...new Set([
         ...plan.value.schema.map((s: any) => s.object),
@@ -128,7 +132,7 @@ async function executeApply(dryRun: boolean) {
   pushLog(`${dryRun ? "Dry-run" : "Applying"} plan — ${total} statement(s)…`);
   const unsubApply = rpc.onApplyProgress(pushLog);
   try {
-    const result = await rpc.apply({ targetProfileId: target.value, plan: JSON.parse(JSON.stringify(plan.value)), dryRun });
+    const result = await rpc.apply({ targetProfileId: target.value, planId: planId.value!, dryRun });
     applyResult.value = result;
     if (result.errors.length) {
       pushLog(`✗ ${dryRun ? "Dry-run" : "Apply"} finished with ${result.errors.length} error(s)`);
