@@ -1,6 +1,5 @@
 import { ipcMain, dialog, app, BrowserWindow } from "electron";
-import updaterPkg from "electron-updater";
-const { autoUpdater } = updaterPkg;
+import { autoUpdater } from "./updater.js";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -233,6 +232,10 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle(IPC.InstallUpdate, () => {
-    autoUpdater.quitAndInstall(false, true);
+    try {
+      autoUpdater.quitAndInstall(false, true);
+    } catch (err) {
+      throw new Error(`Update install failed: ${(err as Error).message}`);
+    }
   });
 }

@@ -3,6 +3,9 @@ const { autoUpdater } = pkg;
 import type { BrowserWindow } from "electron";
 import { IPC } from "../shared/ipc-channels.js";
 
+// Re-export the singleton so ipc.ts doesn't create a second instance.
+export { autoUpdater };
+
 export function initUpdater(win: BrowserWindow): void {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;

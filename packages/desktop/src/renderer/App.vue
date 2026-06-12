@@ -53,6 +53,15 @@ onMounted(() => {
   onUnmounted(() => unsubs.forEach((u) => u()));
 });
 
+async function doInstallUpdate() {
+  try {
+    await rpc.installUpdate();
+  } catch (err) {
+    // quitAndInstall failed before the app could quit — surface the error
+    alert(`Update fehlgeschlagen: ${(err as Error).message}`);
+  }
+}
+
 // Keyboard: ⌘/Ctrl+1 connections, ⌘/Ctrl+2 workbench
 function onKeyDown(e: KeyboardEvent) {
   if (!unlocked.value) return;
@@ -107,7 +116,7 @@ window.addEventListener("keydown", onKeyDown);
       </template>
       <template v-else>
         <span><strong>v{{ updateVersion }}</strong> ready to install</span>
-        <button class="btn sm primary" @click="rpc.installUpdate()">Restart &amp; Update</button>
+        <button class="btn sm primary" @click="doInstallUpdate">Restart &amp; Update</button>
       </template>
       <button class="btn ghost sm" @click="updateDismissed = true">✕</button>
     </div>
