@@ -169,7 +169,7 @@ export async function fullOverwrite(source: Profile, target: Profile, opts: Dump
   try {
     const args = buildDumpArgs(srcEp, opts);
     const child = spawn(opts.binary ?? "mysqldump", args, {
-      env: { ...process.env, MYSQL_PWD: srcEp.password },
+      env: { ...augmentedEnv(), MYSQL_PWD: srcEp.password },
     });
 
     let buffer = "";
