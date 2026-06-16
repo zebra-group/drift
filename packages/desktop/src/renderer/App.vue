@@ -53,11 +53,12 @@ onMounted(() => {
   onUnmounted(() => unsubs.forEach((u) => u()));
 });
 
+const isMacOS = navigator.platform.toLowerCase().startsWith("mac");
+
 async function doInstallUpdate() {
   try {
-    await rpc.installUpdate();
+    await rpc.installUpdate(updateVersion.value);
   } catch (err) {
-    // quitAndInstall failed before the app could quit — surface the error
     alert(`Update fehlgeschlagen: ${(err as Error).message}`);
   }
 }
@@ -116,7 +117,7 @@ window.addEventListener("keydown", onKeyDown);
       </template>
       <template v-else>
         <span><strong>v{{ updateVersion }}</strong> ready to install</span>
-        <button class="btn sm primary" @click="doInstallUpdate">Restart &amp; Update</button>
+        <button class="btn sm primary" @click="doInstallUpdate">{{ isMacOS ? 'Open Releases Page' : 'Restart &amp; Update' }}</button>
       </template>
       <button class="btn ghost sm" @click="updateDismissed = true">✕</button>
     </div>

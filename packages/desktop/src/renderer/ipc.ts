@@ -77,7 +77,7 @@ export const rpc = {
     const wrapped = api().on(IPC.UpdateError, (p) => cb(p as { message: string }));
     return () => api().off(IPC.UpdateError, wrapped);
   },
-  installUpdate: () => api().invoke<void>(IPC.InstallUpdate),
+  installUpdate: (version?: string) => api().invoke<void>(IPC.InstallUpdate, version ? { version } : undefined),
   appVersion: () => api().invoke<string>(IPC.AppVersion),
   windowClose: () => api().send(IPC.WindowClose),
   windowMinimize: () => api().send(IPC.WindowMinimize),

@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app, BrowserWindow } from "electron";
+import { ipcMain, dialog, app, BrowserWindow, shell } from "electron";
 import { autoUpdater } from "./updater.js";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -231,7 +231,14 @@ export function registerIpcHandlers(): void {
     return outputPath;
   });
 
-  ipcMain.handle(IPC.InstallUpdate, () => {
+  ipcMain.handle(IPC.InstallUpdate, (_e, args?: { version?: string }) => {
+    // Squirrel.Mac requires code signing; this app is unsigned, so quitAndInstall
+    // silently does nothing on macOS. Open the releases page instead.
+    if (process.platform === "darwin") {
+      const path = args?.version ? `tag/v${args.version}` : "latest";
+      shell.openExternal(`https://github.com/zebra-group/drift/releases/${path}`);
+      return;
+    }
     try {
       autoUpdater.quitAndInstall(false, true);
     } catch (err) {
