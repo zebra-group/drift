@@ -11,7 +11,7 @@
   },
   "author": {
     "name": "derkoenigeu",
-    "email": "jonas.koenig@mindbox.de"
+    "email": "jonas.koenig@zebra.de"
   },
   "main": "dist/main/index.js",
   "scripts": {
