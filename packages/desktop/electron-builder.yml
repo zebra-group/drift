@@ -1,4 +1,4 @@
-appId: de.mindbox.drift
+appId: de.zebra.drift
 productName: Drift
 artifactName: "${productName}-${version}-${arch}.${ext}"
 directories:
